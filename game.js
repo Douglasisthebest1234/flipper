@@ -58,7 +58,6 @@
       keys[k] = true;
       e.preventDefault();
     }
-    if (!e.repeat && (e.code === 'Space' || e.code === 'Enter')) tryStart();
   });
   window.addEventListener('keyup', (e) => {
     const k = KEYMAP[e.code];
@@ -136,6 +135,7 @@
   function tryStart() {
     if (game.state === 'play') return;
     if (game.state === 'over' && performance.now() - game.overAt < 700) return;
+    document.activeElement?.blur();   // so Space can't re-press the focused button
     game.state = 'play';
     game.score = 0;
     game.combo = 0;
@@ -663,4 +663,5 @@
   updateHud();
   requestAnimationFrame(frame);
 })();
+# flipper
 # flipper
