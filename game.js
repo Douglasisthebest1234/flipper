@@ -7,13 +7,13 @@
   const MAT_Y = 470, MAT_HALF = 170, FRAME_HALF = 200, GROUND_Y = 545;
   const FOOT = 48;                      // body origin -> feet when standing
   const GRAVITY = 1800;
-  const V_MIN = 620, V_START = 720, V_MAX = 1100;
+  const V_MIN = 620, V_START = 720, V_MAX = 1500;
   const SPIN = { tuck: 17, pike: 11, layout: 7.5 };      // rad/s
   const SHAPE_MULT = { tuck: 1, pike: 1.3, layout: 1.7 };
   const SHAPE_NAME = { tuck: 'Tuck', pike: 'Pike', layout: 'Layout' };
   const TWIST_RATE = 14;                // rad/s
   const CONTACT_TIME = 0.22, CRASH_TIME = 0.9;
-  const ROUND_TIME = 60;
+  const CAM_TOP = 150;                  // camera pans up to keep the jumper below this
   const TAU = Math.PI * 2;
   const BEST_KEY = 'flipper.best';
 
@@ -23,13 +23,8 @@
   const el = {
     score: document.getElementById('score'),
     combo: document.getElementById('combo'),
-    time: document.getElementById('time'),
     best: document.getElementById('best'),
     menu: document.getElementById('menu'),
-    over: document.getElementById('gameover'),
-    finalScore: document.getElementById('finalScore'),
-    bestMsg: document.getElementById('bestMsg'),
-    trickList: document.getElementById('trickList'),
   };
 
   function resize() {
@@ -81,19 +76,15 @@
     btn.addEventListener('contextmenu', (e) => e.preventDefault());
   });
   document.getElementById('startBtn').addEventListener('click', () => tryStart());
-  document.getElementById('againBtn').addEventListener('click', () => tryStart());
 
   // ---------- State ----------
   const game = {
-    state: 'menu',        // menu | play | over
+    state: 'menu',        // menu | play
     score: 0,
     combo: 0,
-    time: ROUND_TIME,
-    finalJump: false,
     best: loadBest(),
     tricks: new Map(),    // name -> { count, best }
     lastTrick: null,
-    overAt: 0,
   };
 
   const p = {
@@ -134,47 +125,16 @@
 
   function tryStart() {
     if (game.state === 'play') return;
-    if (game.state === 'over' && performance.now() - game.overAt < 700) return;
     document.activeElement?.blur();   // so Space can't re-press the focused button
     game.state = 'play';
     game.score = 0;
     game.combo = 0;
-    game.time = ROUND_TIME;
-    game.finalJump = false;
     game.tricks.clear();
     game.lastTrick = null;
     popups.length = 0;
     particles.length = 0;
     p.bounceV = Math.max(p.bounceV, V_START);
     el.menu.classList.add('hidden');
-    el.over.classList.add('hidden');
-    updateHud();
-  }
-
-  function endGame() {
-    game.state = 'over';
-    game.overAt = performance.now();
-    const isBest = game.score > game.best;
-    if (isBest) {
-      game.best = game.score;
-      saveBest(game.best);
-    }
-    el.finalScore.textContent = game.score.toLocaleString();
-    el.bestMsg.textContent = isBest && game.score > 0
-      ? 'New personal best!'
-      : `Best: ${game.best.toLocaleString()}`;
-    el.trickList.replaceChildren();
-    const list = [...game.tricks.entries()].sort((a, b) => b[1].best - a[1].best);
-    for (const [name, info] of list) {
-      const li = document.createElement('li');
-      const a = document.createElement('span');
-      const b = document.createElement('span');
-      a.textContent = info.count > 1 ? `${name} ×${info.count}` : name;
-      b.textContent = info.best.toLocaleString();
-      li.append(a, b);
-      el.trickList.append(li);
-    }
-    el.over.classList.remove('hidden');
     updateHud();
   }
 
@@ -183,8 +143,6 @@
     const mult = comboMult();
     el.combo.textContent = 'x' + (Number.isInteger(mult) ? mult : mult.toFixed(2).replace(/0$/, ''));
     el.combo.classList.toggle('hot', mult > 1);
-    el.time.textContent = Math.ceil(game.time);
-    el.time.classList.toggle('low', game.state === 'play' && game.time <= 10);
     el.best.textContent = Math.max(game.best, game.score).toLocaleString();
   }
 
@@ -262,6 +220,10 @@
     pts = Math.max(10, Math.round(pts / 10) * 10);
 
     game.score += pts;
+    if (game.score > game.best) {
+      game.best = game.score;
+      saveBest(game.best);
+    }
     if (err < 0.45) game.combo++;
     game.lastTrick = name;
     game.tricks.set(name, {
@@ -326,8 +288,6 @@
       p.angle -= n * TAU;
       if (playing) scoreTrick(n, h, err);
     }
-
-    if (playing && game.finalJump) endGame();
   }
 
   function launch() {
@@ -346,16 +306,6 @@
   }
 
   function update(dt) {
-    if (game.state === 'play' && !game.finalJump) {
-      game.time -= dt;
-      if (game.time <= 0) {
-        game.time = 0;
-        game.finalJump = true;
-        popups.push({ text: 'FINAL JUMP', sub: '', color: '#ff6b6b', life: 1.2 });
-      }
-      updateHud();
-    }
-
     const inp = input();
     p.t += dt;
     wobbleT += dt;
@@ -610,14 +560,16 @@
     ctx.globalAlpha = 1;
   }
 
-  function drawOverlays() {
+  function drawParticles() {
     for (const q of particles) {
       ctx.globalAlpha = Math.min(1, q.life * 2);
       ctx.fillStyle = q.color;
       ctx.fillRect(q.x - 3, q.y - 3, 6, 6);
     }
     ctx.globalAlpha = 1;
+  }
 
+  function drawOverlays() {
     // live preview of the trick in progress
     if (game.state === 'play' && p.state === 'air') {
       const n = Math.round(p.angle / TAU);
@@ -642,9 +594,16 @@
     if (shake > 0) {
       ctx.translate((Math.random() - 0.5) * shake * 30, (Math.random() - 0.5) * shake * 30);
     }
+    const cam = Math.max(0, CAM_TOP - p.y);
+    ctx.fillStyle = '#4aa8ee';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(0, cam);
     drawBackground(time);
     drawTrampoline();
     drawFigure();
+    drawParticles();
+    ctx.restore();
     drawPowerMeter();
     drawOverlays();
     ctx.restore();
@@ -663,5 +622,3 @@
   updateHud();
   requestAnimationFrame(frame);
 })();
-# flipper
-# flipper

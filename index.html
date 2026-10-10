@@ -11,7 +11,6 @@
     <header class="hud">
       <div class="stat"><span class="label">Score</span><span class="value" id="score">0</span></div>
       <div class="stat"><span class="label">Combo</span><span class="value" id="combo">x1</span></div>
-      <div class="stat"><span class="label">Time</span><span class="value" id="time">60</span></div>
       <div class="stat"><span class="label">Best</span><span class="value" id="best">0</span></div>
     </header>
 
@@ -20,7 +19,7 @@
 
       <div class="overlay" id="menu">
         <h1>FLIPPER</h1>
-        <p class="tagline">60 seconds. Flip, twist, and stick the landing.</p>
+        <p class="tagline">Flip, twist, and stick the landing.</p>
         <ul class="howto">
           <li><kbd>Space</kbd> hold when you hit the mat to bounce higher</li>
           <li><kbd>←</kbd> <kbd>→</kbd> rotate (backflip / frontflip)</li>
@@ -31,14 +30,6 @@
         </ul>
         <p class="tip">Land on your feet. New tricks score double, repeats score half.</p>
         <button id="startBtn">Start</button>
-      </div>
-
-      <div class="overlay hidden" id="gameover">
-        <h1>Time!</h1>
-        <p class="final">Score <strong id="finalScore">0</strong></p>
-        <p class="tagline" id="bestMsg"></p>
-        <ol class="tricklist" id="trickList"></ol>
-        <button id="againBtn">Play again</button>
       </div>
     </div>
 

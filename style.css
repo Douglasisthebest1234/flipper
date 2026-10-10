@@ -29,7 +29,7 @@ body {
 /* HUD */
 .hud {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -58,10 +58,6 @@ body {
 
 #combo.hot {
   color: var(--accent);
-}
-
-#time.low {
-  color: var(--accent-2);
 }
 
 /* Stage */
@@ -124,40 +120,6 @@ canvas {
   text-align: left;
   font-size: 15px;
   line-height: 1.9;
-}
-
-.final {
-  margin: 0;
-  font-size: 22px;
-}
-
-.final strong {
-  font-size: 40px;
-  color: var(--accent);
-  margin-left: 8px;
-}
-
-.tricklist {
-  margin: 4px 0;
-  padding: 0;
-  list-style: none;
-  font-size: 14px;
-  max-height: 34%;
-  overflow-y: auto;
-  min-width: min(340px, 90%);
-}
-
-.tricklist li {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.tricklist li span:last-child {
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
 }
 
 .overlay button {
