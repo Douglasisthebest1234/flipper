@@ -13,6 +13,7 @@
   const SHAPE_NAME = { tuck: 'Tuck', pike: 'Pike', layout: 'Layout' };
   const TWIST_RATE = 14;                // rad/s
   const CONTACT_TIME = 0.22, CRASH_TIME = 0.9;
+  const HEAD_TOL = 0.087, HEAD_BONUS = 1000000;   // secret: dead-vertical head landing (within ~5°)
   const CAM_TOP = 150;                  // camera pans up to keep the jumper below this
   const TAU = Math.PI * 2;
   const BEST_KEY = 'flipper.best';
@@ -182,6 +183,14 @@
     return name;
   }
 
+  function addScore(pts) {
+    game.score += pts;
+    if (game.score > game.best) {
+      game.best = game.score;
+      saveBest(game.best);
+    }
+  }
+
   function scoreTrick(n, h, err) {
     const flips = Math.abs(n);
     const shape = dominantShape();
@@ -219,11 +228,7 @@
     if (mult > 1) tags.push('x' + mult);
     pts = Math.max(10, Math.round(pts / 10) * 10);
 
-    game.score += pts;
-    if (game.score > game.best) {
-      game.best = game.score;
-      saveBest(game.best);
-    }
+    addScore(pts);
     if (err < 0.45) game.combo++;
     game.lastTrick = name;
     game.tricks.set(name, {
@@ -279,8 +284,14 @@
       p.bounceV = V_MIN;
       shake = 0.35;
       if (playing) {
-        game.combo = 0;
-        popups.push({ text: 'CRASH!', sub: 'combo lost', color: '#ff6b6b', life: 1.4 });
+        if (Math.PI - err < HEAD_TOL) {
+          addScore(HEAD_BONUS);
+          burst(60, '#ffe45c');
+          popups.push({ text: 'HEAD SPIKE!', sub: `+${HEAD_BONUS.toLocaleString()}`, color: '#ffe45c', life: 1.8 });
+        } else {
+          game.combo = 0;
+          popups.push({ text: 'CRASH!', sub: 'combo lost', color: '#ff6b6b', life: 1.4 });
+        }
         updateHud();
       }
     } else {
